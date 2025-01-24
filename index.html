@@ -1,28 +1,24 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <title>
-        Calcolo Festa
-    </title>
+    <meta charset="UTF-8">
+    <title>Calcolo Festa</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="script/script.js"></script>
-    <link rel="stylsheet" href="style/style.css">
+    <link rel="stylesheet" href="style/style.css">
 </head>
 <body>
-    <h1>
-        Calcolo Festa
-    </h1>
+    <h1>Calcolo Festa</h1>
     <hr>
-    <h2>
-        Elenco Prodotti
-    </h2>
+    <h2>Elenco Prodotti</h2>
     <button onclick="aggiungi()">Aggiungi</button>
-    <button onclick="rimuovi()">Rimuovi</button>
+    <br>
     <br>
     <div id="prodotti"></div>
     <hr>
-    Numero amici
-    <input type="number" value="10">
-    <button onclick="calcola()">Calcola</button>
+    Numero amici: <input type="number" id="numAmici" value="10" onchange="calcola()">
+    Budget: <input type="number" id="budget" value="100" onchange="calcola()">
+    <button onclick="generaPDF()">Genera PDF</button>
     <p id="output"></p>
 </body>
 </html>
