@@ -1,3 +1,5 @@
+//import { jsPDF } from "jspdf"; // era una libreria che aveva citato fabio biondi
+
 function calcola() {
     let oggetti = [];
     let budget = parseFloat(document.getElementById("budget").value);
@@ -25,7 +27,7 @@ function calcola() {
                 }
             }
         });
-        if (oggetto.sconto < 0 || oggetto.sconto > 100 || oggetto.prezzo <= 0 || oggetto.quantita <= 0) { return; }
+        if (oggetto.sconto < 0 || oggetto.sconto > 100 || oggetto.prezzo <= 0 || oggetto.quantita <= 0 || isNaN(oggetto.sconto) || isNaN(oggetto.prezzo) || isNaN(oggetto.quantita)) { return; }
         oggetti.push(oggetto);
     });
 
@@ -40,7 +42,7 @@ function calcola() {
         if (prezzo_categoria.has(oggetto.categoria)) { // se c'è quella chiave, somma, altrimenti la crea col prezzo
             prezzo_categoria.set(oggetto.categoria, [
                 prezzo_categoria.get(oggetto.categoria)[0] + prezzo,
-                prezzo_categoria.get(oggetto.categoria)[0] + prezzo * ((100 - oggetto.sconto) / 100)
+                prezzo_categoria.get(oggetto.categoria)[1] + prezzo * ((100 - oggetto.sconto) / 100)
             ]);
         } else {
             prezzo_categoria.set(oggetto.categoria, [prezzo, prezzo * ((100 - oggetto.sconto) / 100)]);
@@ -56,10 +58,13 @@ function calcola() {
     for(const [key, value] of prezzo_categoria)
         categorizzato += key +  " -> " + value[0] + " | " + value[1] + "\n";
 
+    let rimuovibudget = rimuoviPerBudget(oggetti, budget, totale_sconto);
+
     document.getElementById("output").innerText = `Totale senza sconto: €${totale_pieno}\n
     Totale scontato: €${totale_sconto}\n
     Totale per amico: €${totalePerAmico}\n
-    ${budget < totale_sconto ? "Budget superato" : "Budget non superato"}\n
+    ${budget >= totale_sconto ? "Budget non superato" : "Budget superato - ricalcolato arrivando a " + rimuovibudget[1] + "€"}\n
+    ${budget >= totale_sconto ? "" : `Rimossi per budget: \n ${rimuovibudget[0]}\n`}\n
     Prezzo per categoria (primo senza sconto, secondo con): \n ${categorizzato}`;
 
     return [oggetti, totale_sconto, totale_pieno, totalePerAmico];
@@ -94,8 +99,7 @@ function rimuovi(btn) {
     calcola();
 }
 
-function rimuoviPerBudget(oggetti, budget) { //DA FINIRE QUI
-    let totale_sconto = 0;
+function rimuoviPerBudget(oggetti, budget, totale_sconto) { //DA FINIRE QUI
     let rimossi = [];
     let i = oggetti.length - 1; // Partiamo dagli ultimi aggiunti
 
@@ -110,20 +114,22 @@ function rimuoviPerBudget(oggetti, budget) { //DA FINIRE QUI
         i--;
     }
 
-    return rimossi.join("\n");
+    return [rimossi.join("\n"), totale_sconto];
 }
 
 function generaPDF() {
-    const { jsPDF } = window.jspdf;
+    const { jsPDF } = window.jspdf; //fatto così perchè se no dovevo usare import che deve essere in un module e credo dovessi lanciare il sito in un server locale
+
+
     const doc = new jsPDF();
     
-    let y = 10; // Coordinate iniziali
+    let y_txt = 10; // Coordinate iniziali
     doc.setFont("helvetica", "normal");
     doc.setFontSize(12);
 
     // Titolo
-    doc.text("Elenco Prodotti Festa", 10, y);
-    y += 10;
+    doc.text("Elenco Prodotti Festa", 10, y_txt);
+    y_txt += 10;
 
     let totaleSenzaSconto = 0;
     let totaleConSconto = 0;
@@ -153,37 +159,39 @@ function generaPDF() {
             }
         });
 
+        if (prodotto.sconto < 0 || prodotto.sconto > 100 || prodotto.prezzo <= 0 || prodotto.quantita <= 0 || isNaN(prodotto.sconto) || isNaN(prodotto.prezzo) || isNaN(prodotto.quantita)) { return; } //qui il return è come un continue perchè passa all'iterazione dopo
+
         let prezzoTotale = prodotto.prezzo * prodotto.quantita;
-        let prezzoScontato = prezzoTotale * ((100 - prodotto.sconto) / 100) * prodotto.quantita;
+        let prezzoScontato = prezzoTotale * ((100 - prodotto.sconto) / 100);
 
         totaleSenzaSconto += prezzoTotale;
         totaleConSconto += prezzoScontato;
 
 
-        doc.text(`Nome: ${prodotto.nome}`, 10, y);
-        y += 5;
-        doc.text(`Prezzo unitario: €${prodotto.prezzo.toFixed(2)}`, 10, y);
-        y += 5;
-        doc.text(`Quantità: ${prodotto.quantita}`, 10, y);
-        y += 5;
-        doc.text(`Sconto: ${prodotto.sconto}%`, 10, y);
-        y += 5;
-        doc.text(`Prezzo totale (senza sconto): €${prezzoTotale.toFixed(2)}`, 10, y);
-        y += 5;
-        doc.text(`Prezzo totale (con sconto): €${prezzoScontato.toFixed(2)}`, 10, y);
-        y += 5;
-        doc.text(`Prezzo per persona (con sconto): €${(prezzoScontato/numAmici).toFixed(2)}`, 10, y);
-        y += 10; // Spazio tra i prodotti
+        doc.text(`Nome: ${prodotto.nome}`, 10, y_txt);
+        y_txt += 5;
+        doc.text(`Prezzo unitario: €${prodotto.prezzo.toFixed(2)}`, 10, y_txt);
+        y_txt += 5;
+        doc.text(`Quantità: ${prodotto.quantita}`, 10, y_txt);
+        y_txt += 5;
+        doc.text(`Sconto: ${prodotto.sconto}%`, 10, y_txt);
+        y_txt += 5;
+        doc.text(`Prezzo totale (senza sconto): €${prezzoTotale.toFixed(2)}`, 10, y_txt);
+        y_txt += 5;
+        doc.text(`Prezzo totale (con sconto): €${prezzoScontato.toFixed(2)}`, 10, y_txt);
+        y_txt += 5;
+        doc.text(`Prezzo per persona (con sconto): €${(prezzoScontato/numAmici).toFixed(2)}`, 10, y_txt);
+        y_txt += 10; // Spazio tra i prodotti
     });
 
     let totalePerAmico = totaleConSconto / numAmici;
     // Totali
-    doc.text(`Totale senza sconto: €${totaleSenzaSconto.toFixed(2)}`, 10, y);
-    y += 5;
-    doc.text(`Totale con sconto: €${totaleConSconto.toFixed(2)}`, 10, y);
-    y += 5;
-    doc.text(`Prezzo per persona (con sconto): €${totalePerAmico.toFixed(2)}`, 10, y);
-    y += 5;
+    doc.text(`Totale senza sconto: €${totaleSenzaSconto.toFixed(2)}`, 10, y_txt);
+    y_txt += 5;
+    doc.text(`Totale con sconto: €${totaleConSconto.toFixed(2)}`, 10, y_txt);
+    y_txt += 5;
+    doc.text(`Prezzo per persona (con sconto): €${totalePerAmico.toFixed(2)}`, 10, y_txt);
+    y_txt += 5;
 
     // Salva il PDF
     doc.save("prodotti_festa.pdf");
