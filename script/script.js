@@ -154,7 +154,7 @@ function generaPDF() {
         });
 
         let prezzoTotale = prodotto.prezzo * prodotto.quantita;
-        let prezzoScontato = prezzoTotale * ((100 - prodotto.sconto) / 100);
+        let prezzoScontato = prezzoTotale * ((100 - prodotto.sconto) / 100) * prodotto.quantita;
 
         totaleSenzaSconto += prezzoTotale;
         totaleConSconto += prezzoScontato;
